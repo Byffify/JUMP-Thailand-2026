@@ -7,22 +7,22 @@ function Navbar() {
         <div>
           <img src={logo} alt="Logo" className="h-10" />
         </div>
-        <div className="flex gap-4 font-bold">
+        <div className="flex gap-4">
           <a
             href="/ideas"
-            className="hover:text-blue-200 transition-colors duration-300"
+            className="text-slate-400 hover:bg-white/5 hover:text-slate-200 text-sm font-medium transition-colors duration-300 px-4 py-2 rounded-full"
           >
             Ideas
           </a>
           <a
-            href="/discover"
-            className="hover:text-blue-200 transition-colors duration-300"
+            href="/Library"
+            className="text-slate-400 hover:bg-white/5 hover:text-slate-200 text-sm font-medium transition-colors duration-300 px-4 py-2 rounded-full"
           >
-            Discover
+            My Materials
           </a>
         </div>
         <div>
-          <button className="rounded-xl p-2 bg-transparent border-2 border-white hover:bg-blue-700/50 transition-colors duration-300 font-semibold">
+          <button className="rounded-xl p-2 bg-krumate-teal hover:brightness-110 transition-colors duration-300 font-semibold">
             @example666
           </button>
         </div>
