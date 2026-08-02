@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+@theme {
+  /* Brand Colors */
+  --color-krumate-navy: #0F172A;
+  --color-krumate-teal: #0D9488;
+  --color-krumate-teal-light: #F0FDFA;
+  --color-krumate-amber: #F59E0B;
+
+  /* Surface Colors */
+  --color-krumate-base: #F8FAFC;
+  --color-krumate-white: #FFFFFF;
+
+  /* Semantic Colors */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+}
