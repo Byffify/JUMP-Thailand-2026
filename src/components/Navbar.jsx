@@ -3,9 +3,9 @@ import logo from "../assets/logo.png";
 function Navbar() {
   return (
     <header className="bg-krumate-navy py-4 text-white">
-      <nav className="max-w-5xl mx-auto justify-between items-center flex">
+      <nav className="max-w-6xl mx-auto justify-between items-center flex">
         <div>
-          <img src={logo} alt="Logo" className="h-10" />
+          <img src={logo} alt="Logo" className="h-10 cursor-pointer" />
         </div>
         <div className="flex gap-4">
           <a
@@ -22,7 +22,7 @@ function Navbar() {
           </a>
         </div>
         <div>
-          <button className="rounded-xl p-2 bg-krumate-teal hover:brightness-110 transition-colors duration-300 font-semibold">
+          <button className="rounded-xl py-2 px-4 bg-krumate-teal hover:brightness-110 transition-colors duration-300 font-semibold cursor-pointer">
             @example666
           </button>
         </div>
