@@ -6,6 +6,15 @@ KruMate OS is an AI-powered SaaS platform designed to help Thai teachers reduce 
 
 ---
 
+### How to run
+
+- clone repository
+- open terminal
+- git branch -v ชื่อbranch
+- git switch ชื่อbranch
+- npm install
+- npm rundev
+
 # Tech Stack
 
 - React + Vite
