@@ -1,19 +1,99 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   /* Brand Colors */
-  --color-krumate-navy: #0F172A;
-  --color-krumate-teal: #0D9488;
-  --color-krumate-teal-light: #F0FDFA;
-  --color-krumate-amber: #F59E0B;
+  --color-krumate-navy: #102a43;
+  --color-krumate-teal: #0d9488;
+  --color-krumate-teal-light: #d1fae5;
+  --color-krumate-amber: #b45309; /* darkened for AA contrast on light bg */
 
-  /* Surface Colors */
-  --color-krumate-base: #F8FAFC;
-  --color-krumate-white: #FFFFFF;
+  /* Surface Colors — 60% dominant neutrals */
+  --color-krumate-base: #f4f7f7;
+  --color-krumate-white: #ffffff;
+  --color-krumate-surface: #ffffff;
+  --color-krumate-surface-strong: #eef2f5;
+  --color-krumate-surface-soft: #e5f3ee;
+  --color-krumate-surface-2: #d7e4e0;
+  --color-krumate-background: #f4f7f7;
+
+  /* Text — 30% secondary (navy/slate) */
+  --color-krumate-text: #102a43;
+  --color-krumate-muted: #45566b;
+  --color-krumate-border: #d3dbe0;
+
+  /* Accent — 10% (teal primary, amber highlight) */
+  --color-krumate-primary: #0d9488;
+  --color-krumate-primary-dark: #0a7f72;
+  --color-krumate-primary-soft: #d1fae5;
+  --color-krumate-highlight: #b45309;
+  --color-krumate-highlight-soft: #fef3c7;
 
   /* Semantic Colors */
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
+  --color-success: #16a34a;
+  --color-warning: #b45309;
+  --color-error: #dc2626;
+  --color-info: #2563eb;
+}
+
+:root {
+  color-scheme: light;
+  --color-krumate-surface: #ffffff;
+  --color-krumate-surface-strong: #eef2f5;
+  --color-krumate-surface-soft: #e5f3ee;
+  --color-krumate-surface-2: #d7e4e0;
+  --color-krumate-background: #f4f7f7;
+  --color-krumate-text: #102a43;
+  --color-krumate-muted: #45566b;
+  --color-krumate-border: #d3dbe0;
+  --color-krumate-primary: #0d9488;
+  --color-krumate-primary-dark: #0a7f72;
+  --color-krumate-primary-soft: #d1fae5;
+  --color-krumate-highlight: #b45309;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-krumate-navy: #08101e;
+  --color-krumate-teal: #2dd4bf;
+  --color-krumate-teal-light: #134e4a;
+  --color-krumate-amber: #fbbf24;
+
+  /* Surface — 60% dominant dark neutrals */
+  --color-krumate-surface: #0f172a;
+  --color-krumate-surface-strong: #16233b;
+  --color-krumate-surface-soft: #1a334f;
+  --color-krumate-surface-2: #22385a;
+  --color-krumate-background: #0a1220;
+
+  /* Text — 30% secondary */
+  --color-krumate-text: #f1f5f9;
+  --color-krumate-muted: #b6c2d1;
+  --color-krumate-border: #2a4059;
+
+  /* Accent — 10% */
+  --color-krumate-primary: #2dd4bf;
+  --color-krumate-primary-dark: #14b8a6;
+  --color-krumate-primary-soft: #123f4c;
+  --color-krumate-highlight: #fbbf24;
+  --color-krumate-highlight-soft: #3a2a0f;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-krumate-background);
+    color: var(--color-krumate-text);
+    transition:
+      background-color 0.25s ease,
+      color 0.25s ease;
+  }
+
+  ::selection {
+    background-color: rgba(13, 148, 136, 0.2);
+  }
 }
