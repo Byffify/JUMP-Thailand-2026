@@ -7,6 +7,7 @@ import { cn } from "../components/ui";
 import { getSubjectIcon } from "../data/subjectIcons";
 import { contentService } from "../services/contentService";
 import { activityService } from "../services/activityService";
+import { generationService } from "../services/generationService";
 import {
   SUBJECTS,
   GRADES,
@@ -53,46 +54,45 @@ export default function Generator() {
     }
   }, [prefillPrompt, setPrefillPrompt]);
 
-  // จำลองสถานะการสร้างสื่อการสอนทีละขั้นตอน
+  // เดินหน้าสเตตัสขั้นตอนการสร้างขณะรอ pipeline จริงทำงาน
   useEffect(() => {
     if (!isGenerating) return;
-
-    if (stepIndex >= GENERATION_STEPS.length) {
-      const content = {
-        prompt: prompt.trim(),
-        subject,
-        grade,
-        outputType,
-      };
-      contentService.create(content).then((saved) => {
-        activityService.track({
-          type: "content",
-          contentId: saved.id,
-          title: saved.prompt,
-          prompt: saved.prompt,
-          outputType: saved.outputType,
-        });
-        navigate(`/content/${saved.id}`);
-      });
-      return;
-    }
-
-    const timer = setTimeout(() => setStepIndex((i) => i + 1), 700);
+    const timer = setTimeout(
+      () => setStepIndex((i) => Math.min(i + 1, GENERATION_STEPS.length)),
+      400,
+    );
     return () => clearTimeout(timer);
-  }, [
-    isGenerating,
-    stepIndex,
-    prompt,
-    subject,
-    grade,
-    outputType,
-    navigate,
-  ]);
+  }, [isGenerating, stepIndex]);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!prompt.trim() || isGenerating) return;
     setStepIndex(0);
     setIsGenerating(true);
+    try {
+      const result = await generationService.generate({
+        prompt,
+        subject,
+        grade,
+        outputType,
+      });
+      const saved = await contentService.createGenerated({
+        prompt,
+        subject,
+        grade,
+        outputType,
+        source: result.source,
+        body: result.body,
+      });
+      await activityService.track({
+        type: "generate",
+        contentId: saved.id,
+        outputType,
+        source: result.source,
+      });
+      navigate(`/content/${saved.id}`);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const applyExample = (ex) => {
