@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { Home, Sparkles, Store, Users, Menu, X, Moon, Sun } from "lucide-react";
 import { cn } from "./ui.jsx";
 import logo from "../assets/logo.png";
+import { settingsService } from "../services/settingsService";
 
 const ROUTES = [
   { to: "/", label: "แดชบอร์ด", icon: Home, end: true },
@@ -12,15 +13,33 @@ const ROUTES = [
 ];
 
 function useTheme() {
-  const [dark, setDark] = useState(() => {
-    const stored = window.localStorage.getItem("theme");
-    if (stored === "dark" || stored === "light") return stored === "dark";
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
-  });
+  const [dark, setDark] = useState(
+    () => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
+  );
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    settingsService.getTheme().then((stored) => {
+      if (cancelled) return;
+      if (stored === "dark" || stored === "light") {
+        setDark(stored === "dark");
+      }
+      setHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    window.localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
+
+  useEffect(() => {
+    if (hydrated) settingsService.setTheme(dark ? "dark" : "light");
+  }, [dark, hydrated]);
+
   return [dark, () => setDark((d) => !d)];
 }
 

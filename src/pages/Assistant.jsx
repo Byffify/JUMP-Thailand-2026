@@ -1,21 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { Paperclip, Library, Send, X, ChevronRight, BookOpen, FileText } from "lucide-react";
 import { subjects, DOC_TYPES } from "../data/subjects";
-import { Card, Button, Textarea, EmptyState, Pill } from "../components/ui";
+import { Card, Button, AutosizeTextarea, EmptyState, Pill } from "../components/ui";
+import { getSubjectIcon } from "../data/subjectIcons";
+import { chatService } from "../services/chatService";
+import { aiService } from "../services/aiService";
 
-async function getMockAIResponse(userMessage, attachedFiles, libraryDocs) {
-  await new Promise((resolve) => setTimeout(resolve, 900));
-
-  if (libraryDocs.length > 0) {
-    return `ผมเห็นเอกสารที่คุณเลือกจากคลัง ${libraryDocs.length} รายการแล้วครับ (${libraryDocs
-      .map((d) => `${d.chapterTitle} - ${d.docLabel}`)
-      .join(", ")}) — นี่คือคำตอบตัวอย่าง ระบบยังไม่เชื่อม AI จริง`;
-  }
-  if (attachedFiles.length > 0) {
-    return `ผมเห็นไฟล์ที่แนบมา ${attachedFiles.length} ไฟล์แล้วครับ — นี่คือคำตอบตัวอย่าง ระบบยังไม่เชื่อม AI จริง`;
-  }
-  return `เกี่ยวกับ "${userMessage}" นี่เป็นคำตอบตัวอย่างครับ (ยังไม่เชื่อม AI จริง)`;
-}
+const WELCOME_MESSAGE = {
+  role: "assistant",
+  content:
+    "สวัสดีครับ! ผมช่วยตอบคำถามเกี่ยวกับไฟล์ในคลังสื่อการสอน หรือความรู้ในแต่ละวิชาได้ ถามมาได้เลยครับ",
+};
 
 function AttachmentChip({ icon, children, onRemove }) {
   return (
@@ -91,14 +86,19 @@ function LibraryPickerModal({ onClose, onSelect }) {
         </div>
 
         <div className="overflow-y-auto p-2">
-          {subjects.map((s) => (
+          {subjects.map((s) => {
+            const SubjectIcon = getSubjectIcon(s.subject);
+            return (
             <div key={s.id} className="mb-1">
               <button
                 type="button"
                 onClick={() => setExpandedSubject(expandedSubject === s.id ? null : s.id)}
                 className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-krumate-text hover:bg-krumate-surface-strong"
               >
-                {s.title}
+                <span className="flex items-center gap-2">
+                  <SubjectIcon size={15} className="text-krumate-muted" />
+                  {s.title}
+                </span>
                 <ChevronRight
                   size={15}
                   className={[
@@ -147,7 +147,8 @@ function LibraryPickerModal({ onClose, onSelect }) {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
     </div>
@@ -155,9 +156,7 @@ function LibraryPickerModal({ onClose, onSelect }) {
 }
 
 function Assistant() {
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "สวัสดีครับ! ผมช่วยตอบคำถามเกี่ยวกับไฟล์ในคลังสื่อการสอน หรือความรู้ในแต่ละวิชาได้ ถามมาได้เลยครับ" },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [selectedLibraryDocs, setSelectedLibraryDocs] = useState([]);
@@ -165,18 +164,27 @@ function Assistant() {
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
-  const textareaRef = useRef(null);
+
+  // Restore previous conversation on mount; seed a welcome message on first visit.
+  useEffect(() => {
+    let cancelled = false;
+    chatService.list().then((stored) => {
+      if (cancelled) return;
+      if (stored.length === 0) {
+        setMessages([WELCOME_MESSAGE]);
+        chatService.replaceAll([WELCOME_MESSAGE]);
+      } else {
+        setMessages(stored);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
-    }
-  }, [input]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
@@ -212,17 +220,31 @@ function Assistant() {
       files: attachedFiles.map((f) => ({ name: f.name })),
       libraryDocs: selectedLibraryDocs,
     };
-    setMessages((prev) => [...prev, userMessage]);
+    const withUser = [...messages, userMessage];
+    setMessages(withUser);
     setInput("");
     const filesToSend = attachedFiles;
     const docsToSend = selectedLibraryDocs;
     setAttachedFiles([]);
     setSelectedLibraryDocs([]);
     setIsTyping(true);
+    await chatService.replaceAll(withUser);
 
-    const reply = await getMockAIResponse(trimmed, filesToSend, docsToSend);
-    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    const reply = await aiService.generate({
+      message: trimmed,
+      attachedFiles: filesToSend,
+      libraryDocs: docsToSend,
+    });
+    const withReply = [...withUser, { role: "assistant", content: reply }];
+    setMessages(withReply);
     setIsTyping(false);
+    await chatService.replaceAll(withReply);
+  };
+
+  const handleClear = async () => {
+    await chatService.clear();
+    setMessages([WELCOME_MESSAGE]);
+    await chatService.replaceAll([WELCOME_MESSAGE]);
   };
 
   const handleKeyDown = (e) => {
@@ -235,12 +257,24 @@ function Assistant() {
   const canSend = (input.trim() || attachedFiles.length > 0 || selectedLibraryDocs.length > 0) && !isTyping;
 
   return (
-    <div className="mx-auto flex max-w-[700px] flex-col py-2" style={{ height: "calc(100vh - 64px)" }}>
-      <div className="mb-5">
-        <h1 className="mb-1 text-2xl font-bold text-krumate-text">ผู้ช่วย AI</h1>
-        <p className="text-sm text-krumate-muted">
-          ถามเกี่ยวกับไฟล์ในคลังสื่อการสอน หรือความรู้ในแต่ละวิชาได้เลย
-        </p>
+    <div className="mx-auto flex h-[calc(100vh-64px)] max-w-[700px] flex-col py-2">
+      <div className="mb-5 flex items-start justify-between">
+        <div>
+          <h1 className="mb-1 text-2xl font-bold text-krumate-text">ผู้ช่วย AI</h1>
+          <p className="text-sm text-krumate-muted">
+            ถามเกี่ยวกับไฟล์ในคลังสื่อการสอน หรือความรู้ในแต่ละวิชาได้เลย
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleClear}
+          disabled={isTyping}
+          className="shrink-0"
+        >
+          <X size={14} />
+          ล้างประวัติ
+        </Button>
       </div>
 
       <div className="mb-4 flex-1 overflow-y-auto px-1 pt-1">
@@ -275,8 +309,7 @@ function Assistant() {
           </div>
         )}
 
-        <Textarea
-          ref={textareaRef}
+        <AutosizeTextarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

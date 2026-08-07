@@ -4,6 +4,9 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { Card, Button, Textarea } from "../components/ui";
 import { cn } from "../components/ui";
+import { getSubjectIcon } from "../data/subjectIcons";
+import { contentService } from "../services/contentService";
+import { activityService } from "../services/activityService";
 import {
   SUBJECTS,
   GRADES,
@@ -32,7 +35,7 @@ function OptionCard({ active, onClick, icon: Icon, label }) {
 
 export default function Generator() {
   const navigate = useNavigate();
-  const { prefillPrompt, setPrefillPrompt, setGeneratedContent } = useApp();
+  const { prefillPrompt, setPrefillPrompt } = useApp();
 
   const [prompt, setPrompt] = useState("");
   const [subject, setSubject] = useState(SUBJECTS[0].id);
@@ -55,16 +58,22 @@ export default function Generator() {
     if (!isGenerating) return;
 
     if (stepIndex >= GENERATION_STEPS.length) {
-      const id = Date.now();
       const content = {
-        id,
         prompt: prompt.trim(),
         subject,
         grade,
         outputType,
       };
-      setGeneratedContent(content);
-      navigate(`/content/${id}`);
+      contentService.create(content).then((saved) => {
+        activityService.track({
+          type: "content",
+          contentId: saved.id,
+          title: saved.prompt,
+          prompt: saved.prompt,
+          outputType: saved.outputType,
+        });
+        navigate(`/content/${saved.id}`);
+      });
       return;
     }
 
@@ -78,7 +87,6 @@ export default function Generator() {
     grade,
     outputType,
     navigate,
-    setGeneratedContent,
   ]);
 
   const handleGenerate = () => {
@@ -129,7 +137,7 @@ export default function Generator() {
                     key={s.id}
                     active={subject === s.id}
                     onClick={() => setSubject(s.id)}
-                    icon={s.icon}
+                    icon={getSubjectIcon(s.label)}
                     label={s.label}
                   />
                 ))}

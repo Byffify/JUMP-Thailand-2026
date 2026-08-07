@@ -15,9 +15,10 @@ import {
   IconWand,
   IconX,
 } from "@tabler/icons-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { activityService } from "../services/activityService";
 import {
   Button,
   Card,
@@ -50,10 +51,54 @@ const QUICK_ACTIONS = [
   { icon: IconPresentation, label: "สไลด์" },
 ];
 
-const RECENT = [
-  { icon: IconFileText,    title: "แผนการสอนวิทยาศาสตร์ ป.6 เรื่องระบบสุริยะ",   time: "เมื่อ 2 ชั่วโมงที่แล้ว",  tag: "แผนการสอน" },
-  { icon: IconClipboardList, title: "ใบงานคณิตศาสตร์ เรื่องเศษส่วน ป.5",          time: "เมื่อวานนี้",             tag: "ใบงาน" },
-  { icon: IconHelpCircle,  title: "แบบทดสอบภาษาไทย ม.1 เรื่องการอ่านจับใจความ",  time: "2 วันที่แล้ว",           tag: "แบบทดสอบ" },
+const TYPE_META = {
+  "lesson-plan": { icon: IconFileText, label: "แผนการสอน" },
+  worksheet: { icon: IconClipboardList, label: "ใบงาน" },
+  quiz: { icon: IconHelpCircle, label: "แบบทดสอบ" },
+  slides: { icon: IconPresentation, label: "สไลด์นำเสนอ" },
+  rubric: { icon: IconFileCheck, label: "แบบประเมิน" },
+  activity: { icon: IconSparkles, label: "กิจกรรม" },
+};
+
+function relativeTime(ts) {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "เมื่อสักครู่";
+  if (mins < 60) return `เมื่อ ${mins} นาทีที่แล้ว`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `เมื่อ ${hrs} ชั่วโมงที่แล้ว`;
+  const days = Math.floor(hrs / 24);
+  return `เมื่อ ${days} วันที่แล้ว`;
+}
+
+function mapRecent(item) {
+  const meta = TYPE_META[item.outputType] || { icon: IconFileText, label: "สื่อ" };
+  return {
+    id: item.contentId || item.id,
+    icon: meta.icon,
+    title: item.title || item.prompt || "สื่อใหม่",
+    tag: meta.label,
+    time: relativeTime(item.createdAt),
+  };
+}
+
+const AI_SUGGESTIONS = [
+  {
+    icon: IconFileText,
+    title: "แผนการสอนเรื่องระบบนิเวศ",
+    prompt: "สร้างแผนการสอนวิทยาศาสตร์ ระดับชั้นประถมศึกษาปีที่ 6 เรื่องระบบนิเวศ ใช้เวลา 50 นาที",
+  },
+  {
+    icon: IconClipboardList,
+    title: "ใบงานเรื่องเศษส่วน",
+    prompt: "ทำใบงานคณิตศาสตร์เรื่องเศษส่วน สำหรับระดับชั้นประถมศึกษาปีที่ 5",
+  },
+  {
+    icon: IconHelpCircle,
+    title: "แบบทดสอบเรื่องสภาพอากาศ",
+    prompt: "สร้างแบบทดสอบปรนัย 10 ข้อ เรื่องการเปลี่ยนแปลงสภาพภูมิอากาศ",
+  },
 ];
 
 // ─── Reusable Mini Components ────────────────────────────────────────────────
@@ -78,9 +123,12 @@ function StatCard({ icon: Icon, stat, unit, label, change }) {
   );
 }
 
-function RecentCard({ icon: Icon, title, time, tag }) {
+function RecentCard({ icon: Icon, title, time, tag, onClick }) {
   return (
-    <Card className="group flex cursor-pointer items-center gap-4 p-4 hover:border-krumate-primary/40 dark:hover:border-krumate-primary/50 hover:shadow-md dark:hover:bg-krumate-surface-strong transition-all duration-200">
+    <Card
+      className="group flex cursor-pointer items-center gap-4 p-4 hover:border-krumate-primary/40 dark:hover:border-krumate-primary/50 hover:shadow-md dark:hover:bg-krumate-surface-strong transition-all duration-200"
+      onClick={onClick}
+    >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-krumate-surface-strong dark:bg-krumate-surface-2 group-hover:bg-krumate-primary/10 dark:group-hover:bg-krumate-primary/20 transition-colors">
         <Icon size={18} className="text-krumate-muted dark:text-krumate-muted group-hover:text-krumate-primary-dark dark:group-hover:text-krumate-primary transition-colors" />
       </div>
@@ -102,8 +150,20 @@ export default function Dashboard() {
   const [prompt, setPrompt] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef(null);
+
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    const items = await activityService.listRecent(6);
+    setRecent(items.map(mapRecent));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
 
   const generateFileId = () => Math.random().toString(36).substring(7);
 
@@ -135,11 +195,6 @@ export default function Dashboard() {
   const handleFileSelect = (e) => {
     processFiles(Array.from(e.target.files || []));
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const loadDashboard = () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 500);
   };
 
   return (
@@ -304,13 +359,19 @@ export default function Dashboard() {
           <div className="flex flex-col gap-3">
             {loading
               ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)
-              : RECENT.length === 0
+              : recent.length === 0
                 ? <EmptyState
                     icon={IconFileText}
                     title="ยังไม่มีสื่อการสอน"
                     description="สร้างสื่อการสอนชิ้นแรกของคุณเพื่อเริ่มต้น"
                   />
-                : RECENT.map((item, idx) => <RecentCard key={idx} {...item} />)}
+                : recent.map((item, idx) => (
+                    <RecentCard
+                      key={idx}
+                      {...item}
+                      onClick={() => item.id && navigate(`/content/${item.id}`)}
+                    />
+                  ))}
           </div>
 
           {/* CTA Banner */}
@@ -334,6 +395,47 @@ export default function Dashboard() {
           </Card>
         </section>
       </div>
+
+      {/* ── AI Suggestions ─────────────────────────────────────────────── */}
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <IconSparkles size={17} className="text-krumate-primary-dark dark:text-krumate-primary" />
+          <h2 className="text-base font-bold text-krumate-text">คำแนะนำจาก AI</h2>
+        </div>
+        <p className="mb-4 -mt-2 text-xs text-krumate-muted">
+          ไอเดียสำหรับสร้างสื่อการสอนชิ้นถัดไปของคุณ
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {AI_SUGGESTIONS.map((s) => {
+            const Icon = s.icon;
+            return (
+              <Card key={s.title} className="group flex flex-col justify-between gap-3 p-5 hover:border-krumate-primary/40 dark:hover:border-krumate-primary/50 hover:shadow-md transition-all duration-200">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-krumate-primary/10 dark:bg-krumate-primary/20">
+                    <Icon size={20} className="text-krumate-primary-dark dark:text-krumate-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-krumate-text">{s.title}</p>
+                    <p className="mt-0.5 text-xs text-krumate-muted leading-relaxed">{s.prompt}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-fit self-end text-krumate-primary-dark dark:text-krumate-primary hover:text-krumate-primary-dark dark:hover:text-krumate-primary"
+                  onClick={() => {
+                    setPrefillPrompt(s.prompt);
+                    navigate("/generator");
+                  }}
+                >
+                  สร้างด้วยคำสั่งนี้
+                  <IconArrowRight size={13} />
+                </Button>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

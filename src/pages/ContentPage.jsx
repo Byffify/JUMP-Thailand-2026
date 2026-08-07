@@ -1,16 +1,40 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { FileDown, FileText, ArrowLeft } from "lucide-react";
-import { useApp } from "../context/AppContext";
-import { Card, Button, Pill, ErrorState } from "../components/ui";
+import { Card, Button, Pill, ErrorState, Skeleton } from "../components/ui";
 import { SUBJECTS, GRADES, OUTPUT_TYPES } from "../data/constants";
+import { contentService } from "../services/contentService";
 
 const findLabel = (List, id) => List.find((item) => item.id === id)?.label ?? id;
 
 export default function ContentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { generatedContent } = useApp();
-  const content = generatedContent?.id === Number(id) ? generatedContent : null;
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    contentService.get(id).then((found) => {
+      if (cancelled) return;
+      setContent(found);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-4 px-6 py-10">
+        <Skeleton className="h-9 w-2/3" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   if (!content) {
     return (
@@ -63,7 +87,7 @@ export default function ContentPage() {
 
       <Card className="mt-4 flex items-center gap-2 p-4 text-sm text-krumate-muted">
         <FileText size={16} />
-        สร้างเมื่อ {new Date(content.id).toLocaleString("th-TH")}
+        สร้างเมื่อ {new Date(content.createdAt ?? content.id).toLocaleString("th-TH")}
       </Card>
     </div>
   );

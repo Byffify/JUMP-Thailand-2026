@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 export const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const BTN_SIZES = {
@@ -72,6 +74,19 @@ export function Textarea({ className = "", ...props }) {
       {...props}
     />
   );
+}
+
+export function AutosizeTextarea({ maxHeight = 160, className = "", ...props }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+  }, [props.value, maxHeight]);
+
+  return <Textarea ref={ref} className={className} {...props} />;
 }
 
 export function Pill({ children, className = "" }) {
