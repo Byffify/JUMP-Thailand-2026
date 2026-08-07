@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { Paperclip, Library, Send, X, ChevronRight, BookOpen, FileText } from "lucide-react";
 import { subjects, DOC_TYPES } from "../data/subjects";
+import { Card, Button, Textarea, EmptyState, Pill } from "../components/ui";
 
 async function getMockAIResponse(userMessage, attachedFiles, libraryDocs) {
   await new Promise((resolve) => setTimeout(resolve, 900));
@@ -15,41 +17,41 @@ async function getMockAIResponse(userMessage, attachedFiles, libraryDocs) {
   return `เกี่ยวกับ "${userMessage}" นี่เป็นคำตอบตัวอย่างครับ (ยังไม่เชื่อม AI จริง)`;
 }
 
-const chipStyle = {
-  display: "flex",
-  alignItems: "center",
-  gap: "4px",
-  background: "rgba(255,255,255,0.6)",
-  borderRadius: "8px",
-  padding: "3px 8px",
-  fontSize: "12px",
-};
+function AttachmentChip({ icon, children, onRemove }) {
+  return (
+    <Pill className="gap-1.5 py-1">
+      {icon}
+      <span className="max-w-40 truncate">{children}</span>
+      {onRemove && (
+        <button type="button" onClick={onRemove} className="text-krumate-muted hover:text-error">
+          <X size={12} />
+        </button>
+      )}
+    </Pill>
+  );
+}
 
 function MessageBubble({ role, content, files, libraryDocs }) {
   const isUser = role === "user";
   return (
-    <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", marginBottom: "16px" }}>
+    <div
+      className={isUser ? "flex justify-end mb-4" : "flex justify-start mb-4"}
+    >
       <div
-        style={{
-          maxWidth: "75%",
-          padding: "10px 14px",
-          borderRadius: "14px",
-          borderBottomRightRadius: isUser ? "4px" : "14px",
-          borderBottomLeftRadius: isUser ? "14px" : "4px",
-          background: isUser ? "#e6f1fb" : "#f1efe8",
-          color: isUser ? "#0c447c" : "#222",
-          fontSize: "14px",
-          lineHeight: 1.6,
-          whiteSpace: "pre-wrap",
-        }}
+        className={[
+          "max-w-[75%] whitespace-pre-wrap rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
+          isUser
+            ? "bg-krumate-primary text-white"
+            : "bg-krumate-surface-strong text-krumate-text",
+        ].join(" ")}
       >
         {(files?.length > 0 || libraryDocs?.length > 0) && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+          <div className="mb-2 flex flex-wrap gap-1.5">
             {files?.map((f, i) => (
-              <span key={`f-${i}`} style={chipStyle}>📄 {f.name}</span>
+              <AttachmentChip key={`f-${i}`} icon={<FileText size={12} />}>{f.name}</AttachmentChip>
             ))}
             {libraryDocs?.map((d, i) => (
-              <span key={`d-${i}`} style={chipStyle}>📚 {d.chapterTitle} · {d.docLabel}</span>
+              <AttachmentChip key={`d-${i}`} icon={<BookOpen size={12} />}>{d.chapterTitle} · {d.docLabel}</AttachmentChip>
             ))}
           </div>
         )}
@@ -61,8 +63,8 @@ function MessageBubble({ role, content, files, libraryDocs }) {
 
 function TypingIndicator() {
   return (
-    <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "16px" }}>
-      <div style={{ padding: "10px 16px", borderRadius: "14px", borderBottomLeftRadius: "4px", background: "#f1efe8", color: "#999", fontSize: "14px" }}>
+    <div className="flex justify-start mb-4">
+      <div className="rounded-xl rounded-bl rounded-b-sm bg-krumate-surface-strong px-4 py-2.5 text-sm text-krumate-muted">
         กำลังพิมพ์...
       </div>
     </div>
@@ -75,73 +77,55 @@ function LibraryPickerModal({ onClose, onSelect }) {
   return (
     <div
       onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 50,
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
-      <div
+      <Card
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "#fff",
-          borderRadius: "16px",
-          width: "480px",
-          maxWidth: "90vw",
-          maxHeight: "70vh",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
+        className="flex max-h-[70vh] w-[480px] max-w-[90vw] flex-col overflow-hidden"
       >
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontSize: "16px" }}>เลือกเอกสารจาก Library</h3>
-          <span onClick={onClose} style={{ cursor: "pointer", color: "#999", fontSize: "18px" }}>✕</span>
+        <div className="flex items-center justify-between border-b border-krumate-border px-5 py-4">
+          <h3 className="text-base font-semibold text-krumate-text">เลือกเอกสารจาก Library</h3>
+          <button type="button" onClick={onClose} className="text-krumate-muted hover:text-krumate-text">
+            <X size={18} />
+          </button>
         </div>
 
-        <div style={{ overflowY: "auto", padding: "8px" }}>
+        <div className="overflow-y-auto p-2">
           {subjects.map((s) => (
-            <div key={s.id} style={{ marginBottom: "4px" }}>
-              <div
+            <div key={s.id} className="mb-1">
+              <button
+                type="button"
                 onClick={() => setExpandedSubject(expandedSubject === s.id ? null : s.id)}
-                style={{
-                  padding: "10px 12px",
-                  cursor: "pointer",
-                  borderRadius: "8px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontWeight: 500,
-                  fontSize: "14px",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-krumate-text hover:bg-krumate-surface-strong"
               >
                 {s.title}
-                <span style={{ color: "#999" }}>{expandedSubject === s.id ? "▾" : "▸"}</span>
-              </div>
+                <ChevronRight
+                  size={15}
+                  className={[
+                    "text-krumate-muted transition-transform",
+                    expandedSubject === s.id ? "rotate-90" : "",
+                  ].join(" ")}
+                />
+              </button>
 
               {expandedSubject === s.id && (
-                <div style={{ paddingLeft: "16px" }}>
+                <div className="pl-4">
                   {s.chapters.map((chapter) => {
                     if (!chapter.documents) {
                       return (
-                        <p key={chapter.id} style={{ fontSize: "13px", color: "#aaa", padding: "6px 12px" }}>
+                        <p key={chapter.id} className="px-3 py-1.5 text-[13px] text-krumate-muted">
                           {chapter.title} — ยังไม่มีเอกสาร
                         </p>
                       );
                     }
                     return (
-                      <div key={chapter.id} style={{ marginBottom: "6px" }}>
-                        <p style={{ fontSize: "13px", color: "#666", margin: "6px 12px 4px" }}>{chapter.title}</p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <div key={chapter.id} className="mb-1.5">
+                        <p className="mx-3 mb-1 mt-1.5 text-[13px] text-krumate-muted">{chapter.title}</p>
+                        <div className="flex flex-col gap-0.5">
                           {DOC_TYPES.map((docType) => (
-                            <div
+                            <button
                               key={docType.key}
+                              type="button"
                               onClick={() =>
                                 onSelect({
                                   subjectTitle: s.title,
@@ -150,20 +134,11 @@ function LibraryPickerModal({ onClose, onSelect }) {
                                   docKey: docType.key,
                                 })
                               }
-                              style={{
-                                padding: "6px 12px",
-                                fontSize: "13px",
-                                cursor: "pointer",
-                                borderRadius: "6px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                              }}
-                              onMouseEnter={(e) => (e.currentTarget.style.background = "#f1efe8")}
-                              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-left text-[13px] text-krumate-text hover:bg-krumate-surface-strong"
                             >
-                              {docType.action === "view" ? "🎬" : "📄"} {docType.label}
-                            </div>
+                              <FileText size={14} className="text-krumate-muted" />
+                              {docType.label}
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -174,14 +149,14 @@ function LibraryPickerModal({ onClose, onSelect }) {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
 
 function Assistant() {
   const [messages, setMessages] = useState([
-    { role: "assistant", content: "สวัสดีครับ! ผมช่วยตอบคำถามเกี่ยวกับไฟล์ในคลังสื่อการสอน หรือความรู้ในแต่ละวิชาได้ ถามมาได้เลยครับ 😊" },
+    { role: "assistant", content: "สวัสดีครับ! ผมช่วยตอบคำถามเกี่ยวกับไฟล์ในคลังสื่อการสอน หรือความรู้ในแต่ละวิชาได้ ถามมาได้เลยครับ" },
   ]);
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -260,86 +235,89 @@ function Assistant() {
   const canSend = (input.trim() || attachedFiles.length > 0 || selectedLibraryDocs.length > 0) && !isTyping;
 
   return (
-    <div style={{ padding: "32px", maxWidth: "700px", margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
-      <div style={{ marginBottom: "20px" }}>
-        <h1 style={{ margin: "0 0 4px" }}>🤖 ผู้ช่วย AI</h1>
-        <p style={{ color: "#666", fontSize: "14px", margin: 0 }}>
+    <div className="mx-auto flex max-w-[700px] flex-col py-2" style={{ height: "calc(100vh - 64px)" }}>
+      <div className="mb-5">
+        <h1 className="mb-1 text-2xl font-bold text-krumate-text">ผู้ช่วย AI</h1>
+        <p className="text-sm text-krumate-muted">
           ถามเกี่ยวกับไฟล์ในคลังสื่อการสอน หรือความรู้ในแต่ละวิชาได้เลย
         </p>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", marginBottom: "16px", padding: "4px 4px 0" }}>
-        {messages.map((msg, i) => (
-          <MessageBubble key={i} role={msg.role} content={msg.content} files={msg.files} libraryDocs={msg.libraryDocs} />
-        ))}
+      <div className="mb-4 flex-1 overflow-y-auto px-1 pt-1">
+        {messages.length === 0 ? (
+          <EmptyState
+            icon={BookOpen}
+            title="ยังไม่มีข้อความ"
+            description="พิมพ์คำถามของคุณเพื่อเริ่มต้นสนทนากับผู้ช่วย AI"
+          />
+        ) : (
+          messages.map((msg, i) => (
+            <MessageBubble key={i} role={msg.role} content={msg.content} files={msg.files} libraryDocs={msg.libraryDocs} />
+          ))
+        )}
         {isTyping && <TypingIndicator />}
         <div ref={scrollRef} />
       </div>
 
-      <div style={{ border: "1px solid #ddd", borderRadius: "20px", padding: "10px 10px 10px 16px", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <Card className="p-2.5 px-4">
         {(attachedFiles.length > 0 || selectedLibraryDocs.length > 0) && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
+          <div className="mb-2 flex flex-wrap gap-2">
             {attachedFiles.map((file, i) => (
-              <div key={`f-${i}`} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f1efe8", borderRadius: "8px", padding: "5px 8px 5px 10px", fontSize: "12px" }}>
-                📄 {file.name}
-                <span onClick={() => removeFile(i)} style={{ cursor: "pointer", color: "#999", fontSize: "13px", lineHeight: 1 }}>✕</span>
-              </div>
+              <AttachmentChip key={`f-${i}`} icon={<Paperclip size={12} />} onRemove={() => removeFile(i)}>
+                {file.name}
+              </AttachmentChip>
             ))}
             {selectedLibraryDocs.map((doc, i) => (
-              <div key={`d-${i}`} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#e6f1fb", color: "#0c447c", borderRadius: "8px", padding: "5px 8px 5px 10px", fontSize: "12px" }}>
-                📚 {doc.chapterTitle} · {doc.docLabel}
-                <span onClick={() => removeLibraryDoc(i)} style={{ cursor: "pointer", color: "#0c447c", fontSize: "13px", lineHeight: 1 }}>✕</span>
-              </div>
+              <AttachmentChip key={`d-${i}`} icon={<BookOpen size={12} />} onRemove={() => removeLibraryDoc(i)}>
+                {doc.chapterTitle} · {doc.docLabel}
+              </AttachmentChip>
             ))}
           </div>
         )}
 
-        <textarea
+        <Textarea
           ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="พิมพ์คำถามของคุณ..."
           rows={1}
-          style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: "14px", padding: "6px 0", fontFamily: "inherit", boxSizing: "border-box", display: "block" }}
+          className="resize-none border-0 px-0 py-1.5 focus:ring-0 focus:border-0"
         />
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" }}>
-          <div style={{ display: "flex", gap: "6px" }}>
-            <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} style={{ display: "none" }} />
+        <div className="mt-1 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" />
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               aria-label="แนบไฟล์"
-              style={{ width: "32px", height: "32px", borderRadius: "50%", border: "1px solid #ccc", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", padding: 0 }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-krumate-border bg-krumate-surface text-krumate-muted hover:bg-krumate-surface-strong hover:text-krumate-text"
             >
-              📎
+              <Paperclip size={16} />
             </button>
 
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setShowLibraryPicker(true)}
-              aria-label="เลือกจาก Library"
-              style={{ height: "32px", borderRadius: "16px", border: "1px solid #ccc", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", padding: "0 12px", color: "#555" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              className="gap-1.5"
             >
-              📚 Library
-            </button>
+              <Library size={14} />
+              Library
+            </Button>
           </div>
 
-          <button
+          <Button
             onClick={handleSend}
             disabled={!canSend}
             aria-label="ส่งข้อความ"
-            style={{ width: "32px", height: "32px", borderRadius: "50%", border: "none", background: canSend ? "#1a1a1a" : "#ccc", cursor: canSend ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, transition: "background 0.15s" }}
+            className="h-8 w-8 p-0"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
-          </button>
+            <Send size={15} />
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {showLibraryPicker && (
         <LibraryPickerModal onClose={() => setShowLibraryPicker(false)} onSelect={handleSelectLibraryDoc} />

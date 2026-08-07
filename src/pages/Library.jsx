@@ -1,66 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Search, FolderOpen, FileText, ChevronRight, ArrowLeft, Download, Play } from "lucide-react";
+import { Card, Button, Input, Pill, EmptyState, Skeleton } from "../components/ui";
 import { subjects, DOC_TYPES, SUBJECT_ICON } from "../data/subjects";
 
-function Card({ children, style, onClick, hoverable = true }) {
-  const [hover, setHover] = useState(false);
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        background: "#fff",
-        border: "1px solid #e5e5e5",
-        borderRadius: "12px",
-        boxShadow: hoverable && hover ? "0 4px 12px rgba(0,0,0,0.1)" : "0 1px 3px rgba(0,0,0,0.06)",
-        transform: hoverable && hover ? "translateY(-2px)" : "translateY(0)",
-        transition: "box-shadow 0.15s, transform 0.15s",
-        cursor: onClick ? "pointer" : "default",
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function BackButton({ onClick, label }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-        marginBottom: "16px",
-        padding: "6px 12px",
-        borderRadius: "8px",
-        border: "1px solid #ddd",
-        background: "#fff",
-        cursor: "pointer",
-        fontSize: "14px",
-      }}
-    >
-      ← {label}
-    </button>
-  );
-}
-
-function Badge({ children, bg, color }) {
-  return (
-    <span
-      style={{
-        background: bg,
-        color: color,
-        fontSize: "12px",
-        padding: "3px 10px",
-        borderRadius: "6px",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
+const SUB_ACTIONS = { view: Play, download: Download };
 
 function SubjectList({
   subjects,
@@ -71,6 +14,7 @@ function SubjectList({
   filterGrade,
   setFilterGrade,
   onOpenSubject,
+  loading,
 }) {
   const subjectOptions = [...new Set(subjects.map((s) => s.subject))];
   const gradeOptions = [...new Set(subjects.map((s) => s.grade))];
@@ -84,55 +28,34 @@ function SubjectList({
     return matchSearch && matchSubject && matchGrade;
   });
 
-  const selectStyle = {
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    fontSize: "14px",
-    background: "#fff",
-    cursor: "pointer",
-  };
+  const hasFilter = filterSubject !== "all" || filterGrade !== "all" || search;
 
   return (
     <div>
-      <h1 style={{ marginBottom: "4px" }}>📚 My Library</h1>
-      <p style={{ color: "#666", marginBottom: "20px" }}>
+      <h1 className="text-2xl font-bold text-krumate-text mb-1">คลังสื่อ</h1>
+      <p className="text-krumate-muted text-sm mb-5">
         คลังสื่อการสอนทั้งหมดของคุณ
       </p>
 
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "24px" }}>
-        <div style={{ position: "relative", flex: "1 1 240px", minWidth: "200px" }}>
-          <span
-            style={{
-              position: "absolute",
-              left: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#999",
-            }}
-          >
-            🔍
-          </span>
-          <input
+      <div className="flex flex-wrap gap-2.5 mb-6">
+        <div className="relative flex-1 basis-60 min-w-[200px]">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-krumate-muted"
+          />
+          <Input
             type="text"
             placeholder="ค้นหาชื่อ, วิชา..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 12px 10px 36px",
-              borderRadius: "8px",
-              border: "1px solid #ddd",
-              fontSize: "14px",
-              boxSizing: "border-box",
-            }}
+            className="pl-9"
           />
         </div>
 
         <select
           value={filterSubject}
           onChange={(e) => setFilterSubject(e.target.value)}
-          style={selectStyle}
+          className="w-auto rounded-lg border border-krumate-border bg-krumate-surface px-3 py-2 text-sm text-krumate-text focus:border-krumate-primary focus:outline-none cursor-pointer"
         >
           <option value="all">ทุกวิชา</option>
           {subjectOptions.map((subj) => (
@@ -145,7 +68,7 @@ function SubjectList({
         <select
           value={filterGrade}
           onChange={(e) => setFilterGrade(e.target.value)}
-          style={selectStyle}
+          className="w-auto rounded-lg border border-krumate-border bg-krumate-surface px-3 py-2 text-sm text-krumate-text focus:border-krumate-primary focus:outline-none cursor-pointer"
         >
           <option value="all">ทุกระดับชั้น</option>
           {gradeOptions.map((grade) => (
@@ -155,88 +78,65 @@ function SubjectList({
           ))}
         </select>
 
-        {(filterSubject !== "all" || filterGrade !== "all" || search) && (
-          <button
+        {hasFilter && (
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => {
               setSearch("");
               setFilterSubject("all");
               setFilterGrade("all");
             }}
-            style={{ ...selectStyle, color: "#777" }}
           >
-            ล้างตัวกรอง ✕
-          </button>
+            ล้างตัวกรอง
+          </Button>
         )}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "16px",
-        }}
-      >
-        {filtered.map((s) => {
-          const meta = SUBJECT_ICON[s.subject] || { icon: "📄", bg: "#f1efe8", color: "#444" };
-          return (
-            <Card key={s.id} style={{ padding: "20px" }}>
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "10px",
-                  background: meta.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "20px",
-                  marginBottom: "12px",
-                }}
-              >
-                {meta.icon}
-              </div>
-              <h3 style={{ margin: "0 0 10px", fontSize: "16px" }}>{s.title}</h3>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "14px" }}>
-                <Badge bg={meta.bg} color={meta.color}>
-                  {s.subject}
-                </Badge>
-                <Badge bg="#f1efe8" color="#555">
-                  {s.grade}
-                </Badge>
-              </div>
-              <button
-                onClick={() => onOpenSubject(s)}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  border: "1px solid #ddd",
-                  background: "#fff",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-              >
-                เปิด →
-              </button>
-            </Card>
-          );
-        })}
-      </div>
-
-      {filtered.length === 0 && (
-        <div
-          style={{
-            marginTop: "32px",
-            textAlign: "center",
-            padding: "40px",
-            border: "1px dashed #ddd",
-            borderRadius: "12px",
-            color: "#999",
-          }}
-        >
-          ไม่พบรายการที่ค้นหา
+      {loading ? (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-44 w-full" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={FolderOpen}
+          title="ไม่พบรายการที่ค้นหา"
+          description="ลองปรับคำค้นหาหรือตัวกรองของคุณ"
+        />
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+          {filtered.map((s) => {
+            const meta = SUBJECT_ICON[s.subject] || { icon: "📄", bg: "#f1efe8", color: "#444" };
+            return (
+              <Card key={s.id} className="p-5 hover:shadow-md transition-all duration-200">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-[10px] mb-3"
+                  style={{
+                    background: meta.bg,
+                    fontSize: "20px",
+                    display: "flex",
+                  }}
+                >
+                  {meta.icon}
+                </div>
+                <h3 className="mb-2.5 text-base font-bold text-krumate-text">{s.title}</h3>
+                <div className="flex gap-1.5 flex-wrap mb-4 gap-y-1.5">
+                  <Pill>{s.subject}</Pill>
+                  <Pill>{s.grade}</Pill>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onOpenSubject(s)}
+                >
+                  เปิด
+                </Button>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
@@ -246,50 +146,40 @@ function SubjectList({
 function ChapterList({ subject, onBack, onOpenChapter }) {
   return (
     <div>
-      <BackButton onClick={onBack} label="กลับไปที่คลัง" />
+      <Button variant="secondary" size="sm" onClick={onBack} className="mb-4 gap-1">
+        <ArrowLeft size={15} />
+        กลับไปที่คลัง
+      </Button>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+      <div className="flex items-center gap-2.5 mb-5">
         <div
-          style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "10px",
-            background: SUBJECT_ICON[subject.subject]?.bg || "#f1efe8",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "20px",
-          }}
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-lg"
+          style={{ background: SUBJECT_ICON[subject.subject]?.bg || "#f1efe8" }}
         >
           {SUBJECT_ICON[subject.subject]?.icon || "📄"}
         </div>
-        <h2 style={{ margin: 0 }}>{subject.title}</h2>
+        <h2 className="text-xl font-bold text-krumate-text">{subject.title}</h2>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div className="flex flex-col gap-2">
         {subject.chapters.map((chapter) => {
           const hasDocs = !!chapter.documents;
           const docCount = hasDocs ? Object.keys(chapter.documents).length : 0;
           return (
             <Card
               key={chapter.id}
+              className={`flex items-center justify-between p-4 ${
+                hasDocs ? "cursor-pointer hover:border-krumate-primary/40" : "opacity-55"
+              }`}
               onClick={hasDocs ? () => onOpenChapter(chapter) : undefined}
-              hoverable={hasDocs}
-              style={{
-                padding: "16px 20px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                opacity: hasDocs ? 1 : 0.55,
-              }}
             >
               <div>
-                <p style={{ margin: 0, fontWeight: 500, fontSize: "15px" }}>{chapter.title}</p>
-                <p style={{ margin: 0, fontSize: "13px", color: "#777" }}>
+                <p className="text-[15px] font-medium text-krumate-text">{chapter.title}</p>
+                <p className="text-xs text-krumate-muted mt-0.5">
                   {hasDocs ? `${docCount} เอกสาร` : "ยังไม่มีเอกสาร"}
                 </p>
               </div>
-              <span style={{ color: "#999" }}>›</span>
+              <ChevronRight size={18} className="text-krumate-muted" />
             </Card>
           );
         })}
@@ -299,58 +189,36 @@ function ChapterList({ subject, onBack, onOpenChapter }) {
 }
 
 function DocumentGrid({ chapter, onBack }) {
-  const handleAction = (docType, doc) => {
-    window.open(doc.url, "_blank");
-  };
-
   return (
     <div>
-      <BackButton onClick={onBack} label="กลับไปที่บทเรียน" />
-      <h2 style={{ margin: "0 0 20px" }}>{chapter.title}</h2>
+      <Button variant="secondary" size="sm" onClick={onBack} className="mb-4 gap-1">
+        <ArrowLeft size={15} />
+        กลับไปที่บทเรียน
+      </Button>
+      <h2 className="text-xl font-bold text-krumate-text mb-5">{chapter.title}</h2>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "14px",
-        }}
-      >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3.5">
         {DOC_TYPES.map((docType) => {
           const doc = chapter.documents[docType.key];
+          const ActionIcon = SUB_ACTIONS[docType.action];
           return (
-            <Card key={docType.key} hoverable={false} style={{ padding: "18px" }}>
+            <Card key={docType.key} className="p-5">
               <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "9px",
-                  background: docType.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: "10px",
-                  fontSize: "16px",
-                }}
+                className="flex h-9 w-9 items-center justify-center rounded-lg mb-2.5"
+                style={{ background: docType.bg }}
               >
-                {docType.action === "view" ? "🎬" : "📄"}
+                <FileText size={16} className="text-krumate-muted" />
               </div>
-              <p style={{ margin: "0 0 10px", fontWeight: 500, fontSize: "14px" }}>{docType.label}</p>
-              <button
-                onClick={() => handleAction(docType, doc)}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  border: "1px solid #ddd",
-                  background: "#fff",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              <p className="mb-2.5 font-medium text-sm text-krumate-text">{docType.label}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full gap-1.5"
+                onClick={() => window.open(doc.url, "_blank")}
               >
+                <ActionIcon size={14} />
                 {docType.action === "view" ? "เปิดดู" : "ดาวน์โหลด"}
-              </button>
+              </Button>
             </Card>
           );
         })}
@@ -365,9 +233,15 @@ function Library() {
   const [filterGrade, setFilterGrade] = useState("all");
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedChapter, setSelectedChapter] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
-    <div style={{ padding: "32px", maxWidth: "900px", margin: "0 auto" }}>
+    <div className="py-2 max-w-[900px]">
       {!selectedSubject && (
         <SubjectList
           subjects={subjects}
@@ -378,6 +252,7 @@ function Library() {
           filterGrade={filterGrade}
           setFilterGrade={setFilterGrade}
           onOpenSubject={(s) => setSelectedSubject(s)}
+          loading={loading}
         />
       )}
 
