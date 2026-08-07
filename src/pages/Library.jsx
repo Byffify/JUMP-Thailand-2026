@@ -54,7 +54,7 @@ export default function Library() {
     const subjectLabel = findLabel(SUBJECTS, subject);
     const matchSearch =
       prompt.toLowerCase().includes(search.toLowerCase()) ||
-      subjectLabel.toLowerCase().includes(search.toLowerCase());
+      (subjectLabel ?? "").toLowerCase().includes(search.toLowerCase());
     const matchSubject = filterSubject === "all" || subject === filterSubject;
     const matchGrade = filterGrade === "all" || grade === filterGrade;
     return matchSearch && matchSubject && matchGrade;
