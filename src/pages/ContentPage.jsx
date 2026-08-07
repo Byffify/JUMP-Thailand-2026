@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { FileDown, FileText, ArrowLeft, ClipboardX } from "lucide-react";
-import { Card, Button, Pill, ErrorState, Skeleton, EmptyState } from "../components/ui";
+import { Card, Button, Pill, SourceBadge, ErrorState, Skeleton, EmptyState } from "../components/ui";
 import { SUBJECTS, GRADES, OUTPUT_TYPES } from "../data/constants";
 import { contentService } from "../services/contentService";
 import { renderBody } from "../utils/bodyRenderer";
@@ -75,6 +75,7 @@ export default function ContentPage() {
             <Pill>{subjectLabel}</Pill>
             <Pill>{gradeLabel}</Pill>
             <Pill className="bg-krumate-primary-soft text-krumate-primary-dark dark:text-krumate-primary">{typeLabel}</Pill>
+            <SourceBadge source={metadata.source} />
           </div>
           <h1 className="text-2xl font-semibold text-krumate-text">{metadata.prompt}</h1>
         </div>

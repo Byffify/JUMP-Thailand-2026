@@ -25,6 +25,7 @@ import {
   EmptyState,
   Pill,
   Skeleton,
+  SourceBadge,
   Textarea,
 } from "../components/ui.jsx";
 
@@ -80,6 +81,7 @@ function mapRecent(item) {
     title: item.title || item.prompt || "สื่อใหม่",
     tag: meta.label,
     time: relativeTime(item.createdAt),
+    source: item.source,
   };
 }
 
@@ -123,7 +125,7 @@ function StatCard({ icon: Icon, stat, unit, label, change }) {
   );
 }
 
-function RecentCard({ icon: Icon, title, time, tag, onClick }) {
+function RecentCard({ icon: Icon, title, time, tag, source, onClick }) {
   return (
     <Card
       className="group flex cursor-pointer items-center gap-4 p-4 hover:border-krumate-primary/40 dark:hover:border-krumate-primary/50 hover:shadow-md dark:hover:bg-krumate-surface-strong transition-all duration-200"
@@ -136,7 +138,10 @@ function RecentCard({ icon: Icon, title, time, tag, onClick }) {
         <p className="truncate text-sm font-semibold text-krumate-text">{title}</p>
         <p className="mt-0.5 text-xs text-krumate-muted">{time}</p>
       </div>
-      <Pill className="shrink-0">{tag}</Pill>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <SourceBadge source={source} />
+        <Pill>{tag}</Pill>
+      </div>
     </Card>
   );
 }

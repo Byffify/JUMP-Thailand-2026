@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { sourceLabel } from "../utils/sourceLabel";
 
 export const cn = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -87,6 +88,22 @@ export function AutosizeTextarea({ maxHeight = 160, className = "", ...props }) 
   }, [props.value, maxHeight]);
 
   return <Textarea ref={ref} className={className} {...props} />;
+}
+
+const SOURCE_TONE = {
+  AI: "bg-krumate-primary/10 text-krumate-primary-dark dark:bg-krumate-primary/20 dark:text-krumate-primary",
+  เทมเพลต: "bg-krumate-highlight/10 text-krumate-highlight dark:bg-krumate-highlight/20 dark:text-krumate-primary",
+  Legacy: "bg-krumate-surface-strong text-krumate-muted",
+};
+
+export function SourceBadge({ source, className = "" }) {
+  const label = sourceLabel(source);
+  if (!label) return null;
+  return (
+    <Pill className={cn(SOURCE_TONE[label] ?? "", className)}>
+      {label}
+    </Pill>
+  );
 }
 
 export function Pill({ children, className = "" }) {

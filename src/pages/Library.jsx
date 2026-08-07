@@ -12,7 +12,7 @@ import {
   Play,
   Trash2,
 } from "lucide-react";
-import { Card, Button, Input, Pill, EmptyState, Skeleton } from "../components/ui";
+import { Card, Button, Input, Pill, SourceBadge, EmptyState, Skeleton } from "../components/ui";
 import { SUBJECTS, GRADES, OUTPUT_TYPES } from "../data/constants";
 import { contentService } from "../services/contentService";
 
@@ -47,12 +47,16 @@ export default function Library() {
   }, []);
 
   const filtered = items.filter((item) => {
-    const subjectLabel = findLabel(SUBJECTS, item.subject);
+    const metadata = item.metadata ?? {};
+    const prompt = metadata.prompt ?? "";
+    const subject = metadata.subject;
+    const grade = metadata.grade;
+    const subjectLabel = findLabel(SUBJECTS, subject);
     const matchSearch =
-      item.prompt.toLowerCase().includes(search.toLowerCase()) ||
+      prompt.toLowerCase().includes(search.toLowerCase()) ||
       subjectLabel.toLowerCase().includes(search.toLowerCase());
-    const matchSubject = filterSubject === "all" || item.subject === filterSubject;
-    const matchGrade = filterGrade === "all" || item.grade === filterGrade;
+    const matchSubject = filterSubject === "all" || subject === filterSubject;
+    const matchGrade = filterGrade === "all" || grade === filterGrade;
     return matchSearch && matchSubject && matchGrade;
   });
 
@@ -145,19 +149,23 @@ export default function Library() {
       ) : (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
           {filtered.map((item) => {
-            const Icon = TYPE_ICON[item.outputType] || FileText;
+            const metadata = item.metadata ?? {};
+            const Icon = TYPE_ICON[metadata.outputType] || FileText;
             return (
               <Card key={item.id} className="p-5 hover:shadow-md transition-all duration-200">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-[10px] bg-krumate-primary/10 text-krumate-primary-dark dark:bg-krumate-primary/20 dark:text-krumate-primary">
                   <Icon size={20} />
                 </div>
-                <h3 className="mb-2.5 line-clamp-2 min-h-[2.5rem] text-base font-bold text-krumate-text">
-                  {item.prompt}
-                </h3>
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <h3 className="line-clamp-2 min-h-[2.5rem] text-base font-bold text-krumate-text">
+                    {metadata.prompt}
+                  </h3>
+                  <SourceBadge source={metadata.source} className="shrink-0" />
+                </div>
                 <div className="mb-4 flex flex-wrap gap-1.5">
-                  <Pill>{findLabel(SUBJECTS, item.subject)}</Pill>
-                  <Pill>{findLabel(GRADES, item.grade)}</Pill>
-                  <Pill>{findLabel(OUTPUT_TYPES, item.outputType)}</Pill>
+                  <Pill>{findLabel(SUBJECTS, metadata.subject)}</Pill>
+                  <Pill>{findLabel(GRADES, metadata.grade)}</Pill>
+                  <Pill>{findLabel(OUTPUT_TYPES, metadata.outputType)}</Pill>
                 </div>
                 <div className="flex gap-2">
                   <Button
