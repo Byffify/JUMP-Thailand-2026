@@ -277,6 +277,44 @@ test("contentService.create is idempotent for v1 input", async () => {
   destroyWindow();
 });
 
+test("contentService.update re-migrates legacy-shaped patch to v1 envelope", async () => {
+  fakeWindowLocalStorage();
+  await contentService.create({
+    id: "update-legacy",
+    prompt: "old",
+    subject: "science",
+    grade: "p6",
+    outputType: "lesson-plan",
+  });
+  const updated = await contentService.update("update-legacy", {
+    prompt: "new prompt",
+  });
+  assert.equal(isV1Record(updated), true);
+  assert.equal(updated.metadata.prompt, "new prompt");
+  assert.equal(updated.prompt, undefined);
+  const fetched = await contentService.get("update-legacy");
+  assert.equal(fetched.metadata.prompt, "new prompt");
+  destroyWindow();
+});
+
+test("contentService.update preserves v1 envelope for v1-shaped patch", async () => {
+  fakeWindowLocalStorage();
+  const created = await contentService.create({
+    id: "update-v1",
+    prompt: "old",
+    subject: "science",
+    grade: "p6",
+    outputType: "lesson-plan",
+  });
+  const updated = await contentService.update("update-v1", {
+    metadata: { ...created.metadata, source: "gemini" },
+  });
+  assert.equal(updated.version, 1);
+  assert.equal(updated.metadata.source, "gemini");
+  assert.equal(updated.metadata.prompt, "old");
+  destroyWindow();
+});
+
 test("contentService.get returns null for missing id", async () => {
   fakeWindowLocalStorage();
   assert.equal(await contentService.get("nope"), null);

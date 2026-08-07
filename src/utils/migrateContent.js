@@ -10,6 +10,8 @@ function isPlainObject(value) {
 
 const ENVELOPE_KEYS = new Set(["id", "version", "createdAt", "metadata", "body"]);
 
+const LEGACY_KEYS = ["prompt", "subject", "grade", "outputType"];
+
 export function isV1Record(record) {
   if (!isPlainObject(record)) {
     return false;
@@ -20,12 +22,26 @@ export function isV1Record(record) {
   );
 }
 
+function foldLegacyKeys(record) {
+  let changed = false;
+  const metadata = { ...record.metadata };
+  const out = { ...record, metadata };
+  for (const key of LEGACY_KEYS) {
+    if (out[key] !== undefined && out[key] !== null) {
+      out.metadata[key] = out[key];
+      delete out[key];
+      changed = true;
+    }
+  }
+  return changed ? out : record;
+}
+
 export function migrateRecord(record) {
   if (!isPlainObject(record)) {
     return { version: CONTENT_VERSION, metadata: {}, body: {} };
   }
   if (isV1Record(record)) {
-    return record;
+    return foldLegacyKeys(record);
   }
 
   const outputType = record.outputType;

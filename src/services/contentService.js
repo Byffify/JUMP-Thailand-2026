@@ -32,7 +32,7 @@ export const contentService = {
     const list = await readAll();
     const idx = list.findIndex((c) => c.id === id);
     if (idx === -1) return null;
-    const updated = { ...list[idx], ...patch, id };
+    const updated = migrateRecord({ ...list[idx], ...patch, id });
     list[idx] = updated;
     await storage.set(KEY, list);
     return updated;
