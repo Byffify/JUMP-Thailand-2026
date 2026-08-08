@@ -1,14 +1,14 @@
 import {
-  Beaker, Calculator, BookOpen, Globe2, Users, Palette, Music, Dumbbell,
+  Calculator, BookOpen, Globe2, Users,
   FileText, ClipboardList, FileQuestion, Presentation, Star, Leaf,
 } from "lucide-react";
 
 export const SUBJECTS = [
-  { id: "science", label: "วิทยาศาสตร์", icon: Beaker },
-  { id: "math", label: "คณิตศาสตร์", icon: Calculator },
-  { id: "thai", label: "ภาษาไทย", icon: BookOpen },
-  { id: "english", label: "ภาษาอังกฤษ", icon: Globe2 },
-  { id: "social", label: "สังคมศึกษา", icon: Users },
+  { id: "science", label: "วิทยาศาสตร์" },
+  { id: "math", label: "คณิตศาสตร์" },
+  { id: "thai", label: "ภาษาไทย" },
+  { id: "english", label: "ภาษาอังกฤษ" },
+  { id: "social", label: "สังคมศึกษา" },
 ];
 
 export const GRADES = [
@@ -36,10 +36,10 @@ export const OUTPUT_TYPES = [
 ];
 
 export const EXAMPLE_PROMPTS = [
-  { text: "สร้างแผนการสอนวิทยาศาสตร์ ป.6 เรื่องระบบนิเวศ", subject: "science", icon: Leaf, color: "#0D9488", bg: "#CCFBF1" },
-  { text: "ทำใบงานภาษาไทยเรื่องคำคุณศัพท์", subject: "thai", icon: BookOpen, color: "#E11D48", bg: "#FFE4E9" },
-  { text: "สร้างแบบทดสอบคณิตศาสตร์ 10 ข้อ เรื่องเศษส่วน", subject: "math", icon: Calculator, color: "#D97706", bg: "#FEF3C7" },
-  { text: "ทำแผนการสอน 50 นาที เรื่องการเปลี่ยนแปลงสภาพภูมิอากาศ", subject: "social", icon: Globe2, color: "#2563EB", bg: "#DBEAFE" },
+  { text: "สร้างแผนการสอนวิทยาศาสตร์ ป.6 เรื่องระบบนิเวศ", subject: "science", icon: Leaf },
+  { text: "ทำใบงานภาษาไทยเรื่องคำคุณศัพท์", subject: "thai", icon: BookOpen },
+  { text: "สร้างแบบทดสอบคณิตศาสตร์ 10 ข้อ เรื่องเศษส่วน", subject: "math", icon: Calculator },
+  { text: "ทำแผนการสอน 50 นาที เรื่องการเปลี่ยนแปลงสภาพภูมิอากาศ", subject: "social", icon: Globe2 },
 ];
 
 export const GENERATION_STEPS = [

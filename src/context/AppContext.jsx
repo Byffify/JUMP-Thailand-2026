@@ -4,13 +4,10 @@ const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [prefillPrompt, setPrefillPrompt] = useState("");
-  const [generatedContent, setGeneratedContent] = useState(null);
 
   const value = {
     prefillPrompt,
     setPrefillPrompt,
-    generatedContent,
-    setGeneratedContent,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
