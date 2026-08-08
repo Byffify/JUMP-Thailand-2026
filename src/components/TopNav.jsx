@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Home, Sparkles, Store, Users, Menu, X, Moon, Sun } from "lucide-react";
 import { cn } from "./ui.jsx";
 import logo from "../assets/logo.png";
@@ -43,11 +43,16 @@ function useTheme() {
   return [dark, () => setDark((d) => !d)];
 }
 
-function NavLinks({ onNavigate }) {
+function NavLinks({ onNavigate, vertical = false }) {
   return (
-    <ul className="flex items-center gap-1">
+    <ul
+      className={cn(
+        "flex items-center gap-1",
+        vertical && "flex-col items-stretch gap-0.5",
+      )}
+    >
       {ROUTES.map(({ to, label, icon: Icon, end }) => (
-        <li key={to}>
+        <li key={to} className={vertical ? "w-full" : ""}>
           <NavLink
             to={to}
             end={end}
@@ -55,6 +60,7 @@ function NavLinks({ onNavigate }) {
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-krumate-muted transition-colors hover:bg-krumate-surface-strong hover:text-krumate-text",
+                vertical && "w-full",
                 isActive && "bg-krumate-primary/10 text-krumate-primary-dark dark:text-krumate-primary",
               )
             }
@@ -87,6 +93,20 @@ function ThemeToggle({ dark, toggle, className = "" }) {
 export default function AppLayout() {
   const [dark, toggleTheme] = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setDrawerOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drawerOpen]);
 
   return (
     <div className="flex min-h-screen flex-col bg-krumate-background">
@@ -148,7 +168,7 @@ export default function AppLayout() {
           onClick={() => setDrawerOpen(false)}
           aria-label="Mobile navigation"
         >
-          <NavLinks />
+          <NavLinks vertical onNavigate={() => setDrawerOpen(false)} />
         </nav>
         <ThemeToggle dark={dark} toggle={toggleTheme} />
       </div>
