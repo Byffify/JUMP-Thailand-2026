@@ -21,6 +21,7 @@ function OptionCard({ active, onClick, icon: Icon, label }) {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left font-medium transition-colors",
         active
@@ -45,6 +46,7 @@ export default function Generator() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  const [error, setError] = useState("");
 
   // รับค่าคำสั่งที่ผู้ใช้ส่งมาจากหน้าอื่น (เช่น Dashboard) ผ่าน Context
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function Generator() {
   const handleGenerate = async () => {
     if (!prompt.trim() || isGenerating) return;
     setStepIndex(0);
+    setError("");
     setIsGenerating(true);
     try {
       const result = await generationService.generate({
@@ -88,8 +91,13 @@ export default function Generator() {
         contentId: saved.id,
         outputType,
         source: result.source,
+        title: prompt.trim(),
+        createdAt: Date.now(),
       });
       navigate(`/content/${saved.id}`);
+    } catch (err) {
+      console.error("Generation failed", err);
+      setError("ไม่สามารถสร้างสื่อการสอนได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setIsGenerating(false);
     }
@@ -196,6 +204,11 @@ export default function Generator() {
                 </>
               )}
             </Button>
+            {error && (
+              <p role="alert" className="mt-3 text-sm text-error">
+                {error}
+              </p>
+            )}
           </div>
 
           {isGenerating && (

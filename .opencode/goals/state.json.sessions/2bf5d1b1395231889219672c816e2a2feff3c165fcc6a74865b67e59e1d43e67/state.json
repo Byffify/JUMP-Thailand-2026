@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "goals": [
+    {
+      "goalId": "c888c9a0-6c44-4940-b8fe-e7710b80deb7",
+      "runId": "6c8021e9-52b6-4d29-9555-58f589b13398",
+      "condition": "Advance jump-thailand-2026-goal from registry-declared active state. [P0] Validate Gemini integration with a live API key and fix contract/schema mismatches. [P1] Replace mock aiService. [P1] Implement export PDF/DOCX/PPTX. [P2] UI integration testing. Stop on credentials/private material; no external writes without authorization.",
+      "successCriteria": "LoopX derives terminal no-follow-up from complete todo sources and an empty frontier.",
+      "constraints": "Run every continuation through LoopX quota should-run and do not self-declare terminal closure.",
+      "mode": "normal",
+      "sessionID": "ses_022af42e3ffeMz1IIYYwR8smtA",
+      "turnCount": 0,
+      "startedAt": 1786125174347,
+      "pausedAt": 0,
+      "totalTokens": 49879,
+      "usage": {
+        "input": 146035,
+        "output": 4577,
+        "reasoning": 85,
+        "cacheRead": 635904,
+        "cacheWrite": 0,
+        "cost": 0,
+        "costKnown": true
+      },
+      "options": {
+        "maxTurns": 10000,
+        "maxDurationMs": 2592000000,
+        "maxTokens": 1000000000,
+        "minDelayMs": 1500,
+        "maxRecentMessages": 50,
+        "noProgressTokenThreshold": 50,
+        "noProgressTurnsBeforePause": 2,
+        "noToolCallTurnsBeforePause": 2,
+        "budgetWrapupRatio": 0.8,
+        "warnTurnsRemaining": 3,
+        "warnDurationMsRemaining": 60000,
+        "warnTokensRemaining": 25000,
+        "maxPromptFailures": 3,
+        "resultRetentionMs": 604800000,
+        "maxStoredResults": 200
+      },
+      "lastStatus": "Auto-continue paused because a new human message arrived; the latest instruction wins. Run /goal resume to continue.",
+      "lastAssistantText": "",
+      "lastAssistantMessageID": "",
+      "lastContinueAt": 0,
+      "lastProgressAt": 1786125570387,
+      "noProgressTurns": 0,
+      "noToolCallTurns": 0,
+      "blockedReason": "",
+      "budgetWrapupSent": false,
+      "stopped": true,
+      "stopReason": "user intervention",
+      "promptFailures": 0,
+      "formatFailures": 0,
+      "executionContext": {
+        "agent": "build",
+        "model": {
+          "providerID": "opencode",
+          "modelID": "deepseek-v4-flash-free"
+        }
+      },
+      "continuationClaim": null,
+      "messageIDs": [
+        "msg_fdd5ee61a0014SIH9epDqd4bRe",
+        "msg_fdd5f33240010bBYxbAws34p30",
+        "msg_fdd60e41f001ltAIa3SyVqMNUE",
+        "msg_fdd61058d001m23sX2ZD7hY5u5",
+        "msg_fdd610ffd001xkNG8f41NmUZGB",
+        "msg_fdd61383300169ShuTdCBitiEx",
+        "msg_fdd614678001w0G7KUUIeBHBsk"
+      ],
+      "history": [
+        {
+          "type": "set",
+          "detail": "Goal created via agent tool with limits: 10000 auto-continues, 2592000s, 1,000,000,000 context tokens.",
+          "timestamp": 1786125174347
+        },
+        {
+          "type": "paused",
+          "detail": "Paused immediately when a new human message arrived; latest instruction wins.",
+          "timestamp": 1786125411846
+        }
+      ],
+      "checkpoints": [],
+      "lastCheckpoint": null,
+      "skipNextTerminalCheck": false,
+      "focused": true
+    }
+  ],
+  "results": [],
+  "archives": [],
+  "orderedSessions": []
+}

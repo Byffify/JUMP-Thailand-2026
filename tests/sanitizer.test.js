@@ -40,3 +40,16 @@ test("sanitizeBody never throws on garbage", () => {
   assert.doesNotThrow(() => sanitizeBody({ outputType: "worksheet", body: "nope" }));
   assert.doesNotThrow(() => sanitizeBody({ outputType: "quiz", body: { title: [] } }));
 });
+
+test("sanitizeBody coerces flat strings under object-shaped array into valid objects", () => {
+  const b = sanitizeBody({
+    outputType: "lesson-plan",
+    body: { title: "t", objective: "o", durationMinutes: 50, materials: [], steps: ["ขั้นนำ", "ขั้นสอน"], assessment: "a" },
+  });
+  const result = validateBody("lesson-plan", b);
+  assert.equal(result.valid, true);
+  assert.equal(b.steps.length, 2);
+  assert.equal(b.steps[0].name, "ขั้นนำ");
+  assert.equal(b.steps[0].description, "");
+  assert.equal(typeof b.steps[0].durationMinutes, "number");
+});

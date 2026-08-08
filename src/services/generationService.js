@@ -4,13 +4,17 @@ import { sanitizeBody } from "../utils/sanitizer.js";
 import { extractJson } from "../utils/jsonExtractor.js";
 import { templateGenerator } from "./templateGenerator.js";
 
-const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 
-async function callGemini(payload, { apiKey, fetchImpl = fetch, timeoutMs = 30000 }) {
+function buildEndpoint(model) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
+
+async function callGemini(payload, { apiKey, model, fetchImpl = fetch, timeoutMs = 30000 }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetchImpl(ENDPOINT + "?key=" + encodeURIComponent(apiKey), {
+    const res = await fetchImpl(buildEndpoint(model) + "?key=" + encodeURIComponent(apiKey), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -29,8 +33,9 @@ async function callGemini(payload, { apiKey, fetchImpl = fetch, timeoutMs = 3000
 }
 
 export const generationService = {
-  async generate({ prompt = "", subject = "", grade = "", outputType = "", apiKey, fetchImpl, timeoutMs }) {
+  async generate({ prompt = "", subject = "", grade = "", outputType = "", apiKey, model, fetchImpl, timeoutMs }) {
     const key = apiKey ?? import.meta.env?.VITE_GEMINI_API_KEY ?? "";
+    const resolvedModel = model ?? import.meta.env?.VITE_GEMINI_MODEL ?? DEFAULT_MODEL;
     const fallback = () => {
       const { body } = templateGenerator.generate({ prompt, subject, grade, outputType });
       return { ok: true, body, source: "template", error: null };
@@ -44,7 +49,7 @@ export const generationService = {
       contents: [{ parts: [{ text: buildPrompt({ prompt, subject, grade, outputType }) }] }],
       generationConfig: { responseMimeType: "application/json", temperature: 0.7, maxOutputTokens: 4096 },
     };
-    const result = await callGemini(payload, { apiKey: key, fetchImpl, timeoutMs });
+    const result = await callGemini(payload, { apiKey: key, model: resolvedModel, fetchImpl, timeoutMs });
 
     if (!result.ok) {
       return fallback();
@@ -59,9 +64,22 @@ export const generationService = {
   },
 };
 
+function describeField(f) {
+  if (f.type === "array" && f.itemShape) {
+    const shapeText = f.itemShape
+      .map((sub) => `    - ${sub.name} (${sub.type})`)
+      .join("\n");
+    return `- ${f.name}: array of objects, each object has exactly these fields:\n${shapeText}`;
+  }
+  if (f.type === "array") {
+    return `- ${f.name}: array of ${f.itemType || "values"}`;
+  }
+  return `- ${f.name}: ${f.type}`;
+}
+
 function buildPrompt({ prompt, subject, grade, outputType }) {
   const schema = OUTPUT_SCHEMAS[outputType];
-  const fieldsText = schema.fields.map((f) => `- ${f.name} (${f.type})`).join("\n");
+  const fieldsText = schema.fields.map(describeField).join("\n");
   return [
     "You are a Thai teacher-education assistant. Respond with ONLY a JSON object.",
     "",
@@ -73,6 +91,7 @@ function buildPrompt({ prompt, subject, grade, outputType }) {
     "Return JSON with these top-level fields and nothing else:",
     fieldsText,
     "",
+    "Respect the exact types above. An array-of-objects field must be an array of objects, never a flat array of strings.",
     "Use Thai language for all content. Do not wrap the JSON in markdown fences.",
   ].join("\n");
 }

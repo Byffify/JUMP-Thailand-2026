@@ -19,6 +19,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { activityService } from "../services/activityService";
+import { contentService } from "../services/contentService";
 import {
   Button,
   Card,
@@ -39,10 +40,10 @@ const TABS = [
   { label: "กิจกรรม", icon: IconSparkles, placeholder: "เช่น เสนอกิจกรรมละลายพฤติกรรม 15 นาที สำหรับระดับชั้นประถมศึกษาปีที่ 5" },
 ];
 
-const STATS = [
-  { icon: IconFileText,   stat: "127",   label: "สื่อการสอนที่สร้างแล้ว", change: "+18 รายการในสัปดาห์นี้" },
-  { icon: IconClock,      stat: "86.5",  unit: "ชั่วโมง", label: "เวลาที่ประหยัดได้", change: "เทียบเท่าเวลาทำงาน 2 สัปดาห์" },
-  { icon: IconTrendingUp, stat: "94%",   label: "อัตราการใช้งาน AI",      change: "สูงกว่าค่าเฉลี่ยของโรงเรียน" },
+const STATS_TEMPLATE = [
+  { key: "count", icon: IconFileText, stat: "0", label: "เนื้อการสอนที่สร้างแล้ว", change: "อัปเดตจากข้อมูลจริง" },
+  { key: "saved", icon: IconClock, stat: "0", unit: "ชั่วโมง", label: "เวลาที่ประหยัดได้ (โดยประมาณ)", change: "≈ 30 นาที/ชิ้น" },
+  { key: "types", icon: IconTrendingUp, stat: "0", label: "ประเภทสื่อที่ใช้แล้ว", change: "จากจำนวนประเภทที่มีทั้งหมด" },
 ];
 
 const QUICK_ACTIONS = [
@@ -156,13 +157,30 @@ export default function Dashboard() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [recent, setRecent] = useState([]);
+  const [stats, setStats] = useState(STATS_TEMPLATE);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef(null);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
-    const items = await activityService.listRecent(6);
+    const [items, all] = await Promise.all([
+      activityService.listRecent(6),
+      contentService.list(),
+    ]);
     setRecent(items.map(mapRecent));
+
+    const total = all.length;
+    const hours = (total * 0.5).toFixed(1);
+    const usedTypes = new Set(all.map((c) => c?.metadata?.outputType).filter(Boolean)).size;
+    setStats(
+      STATS_TEMPLATE.map((entry) =>
+        entry.key === "count"
+          ? { ...entry, stat: String(total) }
+          : entry.key === "saved"
+            ? { ...entry, stat: hours }
+            : { ...entry, stat: String(usedTypes) },
+      ),
+    );
     setLoading(false);
   }, []);
 
@@ -230,6 +248,7 @@ export default function Dashboard() {
                   key={tab.label}
                   type="button"
                   onClick={() => setActiveTab(tab)}
+                  aria-pressed={isActive}
                   className={[
                     "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs sm:text-sm font-medium transition-colors cursor-pointer",
                     isActive
@@ -346,7 +365,7 @@ export default function Dashboard() {
           <div className="flex flex-col gap-3">
             {loading
               ? [1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full" />)
-              : STATS.map((item, idx) => <StatCard key={idx} {...item} />)}
+              : stats.map((item, idx) => <StatCard key={idx} {...item} />)}
           </div>
         </section>
 
@@ -357,7 +376,7 @@ export default function Dashboard() {
               <IconHistory size={17} className="text-krumate-primary-dark dark:text-krumate-primary" />
               สื่อการสอนล่าสุด
             </h2>
-            <button onClick={loadDashboard} className="flex items-center gap-1 text-xs font-medium text-krumate-primary-dark dark:text-krumate-primary hover:underline">
+            <button onClick={() => navigate("/library")} className="flex items-center gap-1 text-xs font-medium text-krumate-primary-dark dark:text-krumate-primary hover:underline">
               ดูทั้งหมด <IconArrowRight size={13} />
             </button>
           </div>

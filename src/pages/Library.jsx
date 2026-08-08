@@ -90,6 +90,7 @@ export default function Library() {
         <select
           value={filterSubject}
           onChange={(e) => setFilterSubject(e.target.value)}
+          aria-label="กรองตามวิชา"
           className="w-auto rounded-lg border border-krumate-border bg-krumate-surface px-3 py-2 text-sm text-krumate-text focus:border-krumate-primary focus:outline-none cursor-pointer"
         >
           <option value="all">ทุกวิชา</option>
@@ -103,6 +104,7 @@ export default function Library() {
         <select
           value={filterGrade}
           onChange={(e) => setFilterGrade(e.target.value)}
+          aria-label="กรองตามระดับชั้น"
           className="w-auto rounded-lg border border-krumate-border bg-krumate-surface px-3 py-2 text-sm text-krumate-text focus:border-krumate-primary focus:outline-none cursor-pointer"
         >
           <option value="all">ทุกระดับชั้น</option>

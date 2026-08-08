@@ -33,12 +33,32 @@ function sanitizeField(raw, field) {
     }
     case "string":
     default:
-      return raw == null || typeof raw === "string" ? String(raw ?? "") : String(raw);
+      return raw == null ? "" : String(raw);
   }
 }
 
 function sanitizeArrayItem(item, field) {
   const shape = field.itemShape;
+  if (!shape) return item;
+  // Coerce scalar items (e.g. Gemini returning steps as strings) into valid
+  // shape objects instead of letting schema validation fail and dropping content.
+  if (typeof item === "string" || typeof item === "number") {
+    const firstString = shape.find((sub) => sub.type === "string");
+    const out = {};
+    for (const sub of shape) {
+      if (sub.type === "string") {
+        const isFirst = firstString && sub.name === firstString.name;
+        out[sub.name] = isFirst ? String(item) : "";
+      } else if (sub.type === "number") {
+        out[sub.name] = 0;
+      } else if (sub.type === "array") {
+        out[sub.name] = [];
+      } else {
+        out[sub.name] = {};
+      }
+    }
+    return out;
+  }
   if (!shape || typeof item !== "object" || item === null) return item;
   const out = {};
   for (const sub of shape) {

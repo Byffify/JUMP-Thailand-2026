@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { FileDown, FileText, ArrowLeft, ClipboardX } from "lucide-react";
+import { saveAs } from "file-saver";
 import { Card, Button, Pill, SourceBadge, ErrorState, Skeleton, EmptyState } from "../components/ui";
 import { SUBJECTS, GRADES, OUTPUT_TYPES } from "../data/constants";
 import { contentService } from "../services/contentService";
 import { renderBody } from "../utils/bodyRenderer";
+import { exportService } from "../services/exportService";
 
 const findLabel = (List, id) => List.find((item) => item.id === id)?.label ?? id;
 
@@ -13,6 +15,7 @@ export default function ContentPage() {
   const navigate = useNavigate();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +65,19 @@ export default function ContentPage() {
 
   const view = renderBody({ outputType, body: content.body });
 
+  async function handleExport(format) {
+    setExporting(format);
+    try {
+      const fonts = format === "pdf" ? await exportService.loadPdfFonts() : undefined;
+      const { blob, name } = await exportService.export(content, format, { fonts });
+      saveAs(blob, name);
+    } catch (error) {
+      console.error(`Export ${format} failed`, error);
+    } finally {
+      setExporting(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <Link to="/generator" className="mb-6 inline-flex items-center gap-1 text-sm text-krumate-muted hover:text-krumate-text">
@@ -81,9 +97,15 @@ export default function ContentPage() {
         </div>
 
         <div className="flex shrink-0 gap-2">
-          <Button variant="secondary"><FileDown size={16} /> PDF</Button>
-          <Button variant="secondary"><FileDown size={16} /> DOCX</Button>
-          <Button variant="secondary"><FileDown size={16} /> PPTX</Button>
+          <Button variant="secondary" disabled={exporting === "pdf"} onClick={() => handleExport("pdf")}>
+            <FileDown size={16} /> PDF
+          </Button>
+          <Button variant="secondary" disabled={exporting === "docx"} onClick={() => handleExport("docx")}>
+            <FileDown size={16} /> DOCX
+          </Button>
+          <Button variant="secondary" disabled={exporting === "pptx"} onClick={() => handleExport("pptx")}>
+            <FileDown size={16} /> PPTX
+          </Button>
         </div>
       </div>
 
