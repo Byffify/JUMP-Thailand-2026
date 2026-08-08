@@ -4,17 +4,13 @@ import { sanitizeBody } from "../utils/sanitizer.js";
 import { extractJson } from "../utils/jsonExtractor.js";
 import { templateGenerator } from "./templateGenerator.js";
 
-const DEFAULT_MODEL = "gemini-3.1-flash-lite";
+const GENERATE_ENDPOINT = "/api/generate";
 
-function buildEndpoint(model) {
-  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-}
-
-async function callGemini(payload, { apiKey, model, fetchImpl = fetch, timeoutMs = 30000 }) {
+async function callServer(payload, { fetchImpl = fetch, timeoutMs = 30000 }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetchImpl(buildEndpoint(model) + "?key=" + encodeURIComponent(apiKey), {
+    const res = await fetchImpl(GENERATE_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -22,9 +18,9 @@ async function callGemini(payload, { apiKey, model, fetchImpl = fetch, timeoutMs
     });
     if (!res.ok) return { ok: false };
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    const parsed = extractJson(text);
-    return parsed ? { ok: true, text, parsed } : { ok: false };
+    return data?.ok && typeof data.text === "string"
+      ? { ok: true, text: data.text }
+      : { ok: false };
   } catch (err) {
     return { ok: false, error: String(err) };
   } finally {
@@ -33,29 +29,34 @@ async function callGemini(payload, { apiKey, model, fetchImpl = fetch, timeoutMs
 }
 
 export const generationService = {
-  async generate({ prompt = "", subject = "", grade = "", outputType = "", apiKey, model, fetchImpl, timeoutMs }) {
-    const key = apiKey ?? import.meta.env?.VITE_GEMINI_API_KEY ?? "";
-    const resolvedModel = model ?? import.meta.env?.VITE_GEMINI_MODEL ?? DEFAULT_MODEL;
+  async generate({ prompt = "", subject = "", grade = "", outputType = "", apiKey: _apiKey, model, fetchImpl, timeoutMs }) {
     const fallback = () => {
       const { body } = templateGenerator.generate({ prompt, subject, grade, outputType });
       return { ok: true, body, source: "template", error: null };
     };
 
-    if (!isValidOutputType(outputType) || !key) {
+    if (!isValidOutputType(outputType)) {
       return fallback();
     }
 
-    const payload = {
-      contents: [{ parts: [{ text: buildPrompt({ prompt, subject, grade, outputType }) }] }],
-      generationConfig: { responseMimeType: "application/json", temperature: 0.7, maxOutputTokens: 4096 },
-    };
-    const result = await callGemini(payload, { apiKey: key, model: resolvedModel, fetchImpl, timeoutMs });
+    const result = await callServer(
+      {
+        promptText: buildPrompt({ prompt, subject, grade, outputType }),
+        model,
+      },
+      { fetchImpl, timeoutMs },
+    );
 
     if (!result.ok) {
       return fallback();
     }
 
-    const sanitized = sanitizeBody({ outputType, body: result.parsed });
+    const parsed = extractJson(result.text);
+    if (!parsed) {
+      return fallback();
+    }
+
+    const sanitized = sanitizeBody({ outputType, body: parsed });
     if (!validateBody(outputType, sanitized).valid) {
       return fallback();
     }

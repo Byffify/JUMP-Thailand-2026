@@ -1,8 +1,4 @@
-const DEFAULT_MODEL = "gemini-3.1-flash-lite";
-
-function buildEndpoint(model) {
-  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-}
+const CHAT_ENDPOINT = "/api/chat";
 
 function offlineReply({ message = "", attachedFiles = [], libraryDocs = [] }) {
   if (libraryDocs.length > 0) {
@@ -11,15 +7,15 @@ function offlineReply({ message = "", attachedFiles = [], libraryDocs = [] }) {
       libraryDocs.length +
       " รายการครับ (" +
       libraryDocs.map((d) => `${d.chapterTitle} - ${d.docLabel}`).join(", ") +
-      ") — ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key ก่อน"
+      ") — ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key บนเซิร์ฟเวอร์ก่อน"
     );
   }
   if (attachedFiles.length > 0) {
-    return `ผมเห็นไฟล์ที่แนบมา ${attachedFiles.length} ไฟล์ครับ — ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key ก่อน`;
+    return `ผมเห็นไฟล์ที่แนบมา ${attachedFiles.length} ไฟล์ครับ — ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key บนเซิร์ฟเวอร์ก่อน`;
   }
   return message.trim()
-    ? `เกี่ยวกับ "${message.trim()}" — ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key ก่อน`
-    : "ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key ก่อน";
+    ? `เกี่ยวกับ "${message.trim()}" — ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key บนเซิร์ฟเวอร์ก่อน`
+    : "ยังไม่สามารถเชื่อม AI ได้ กรุณาตั้งค่า API key บนเซิร์ฟเวอร์ก่อน";
 }
 
 function buildPrompt({ message, attachedFiles, libraryDocs }) {
@@ -51,36 +47,31 @@ export const aiService = {
     message = "",
     attachedFiles = [],
     libraryDocs = [],
-    apiKey,
+    apiKey: _apiKey,
     model,
     fetchImpl = fetch,
     timeoutMs = 30000,
   }) {
-    const key = apiKey ?? import.meta.env?.VITE_GEMINI_API_KEY ?? "";
-    if (!key) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return offlineReply({ message, attachedFiles, libraryDocs });
-    }
-
-    const payload = {
-      contents: [{ parts: [{ text: buildPrompt({ message, attachedFiles, libraryDocs }) }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-    };
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetchImpl(buildEndpoint(model ?? DEFAULT_MODEL) + "?key=" + encodeURIComponent(key), {
+      const res = await fetchImpl(CHAT_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          promptText: buildPrompt({ message, attachedFiles, libraryDocs }),
+          model,
+        }),
         signal: controller.signal,
       });
       if (!res.ok) {
         return offlineReply({ message, attachedFiles, libraryDocs });
       }
       const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-      return text.trim() ? text : offlineReply({ message, attachedFiles, libraryDocs });
+      if (!data?.ok || !data?.text) {
+        return offlineReply({ message, attachedFiles, libraryDocs });
+      }
+      return data.text.trim() ? data.text : offlineReply({ message, attachedFiles, libraryDocs });
     } catch {
       return offlineReply({ message, attachedFiles, libraryDocs });
     } finally {
